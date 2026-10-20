@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taxi-demand-pipeline"
+version = "0.1.0"
+description = "Data quality and feature pipeline for NYC taxi demand"
+requires-python = ">=3.11"
+dependencies = ["psycopg[binary]>=3.2,<4", "requests>=2.32,<3", "pyarrow>=18,<24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0,<9"]
+airflow = ["apache-airflow>=2.10,<3"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

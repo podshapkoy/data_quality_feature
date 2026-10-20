@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taxi}
+      POSTGRES_USER: ${POSTGRES_USER:-taxi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taxi_local_only}
+    ports: ["5432:5432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taxi} -d ${POSTGRES_DB:-taxi}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  app:
+    build: .
+    env_file: .env
+    volumes: ["./data:/app/data"]
+    depends_on:
+      db: {condition: service_healthy}
+    command: ["python", "-c", "import time; time.sleep(2147483647)"]
+
+  airflow:
+    build: .
+    env_file: .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /app/dags
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-taxi}:${POSTGRES_PASSWORD:-taxi_local_only}@db:5432/${POSTGRES_DB:-taxi}
+      AIRFLOW__WEBSERVER__SECRET_KEY: local-development-only
+    command: bash -c "airflow db migrate && (airflow users create --username $${AIRFLOW_ADMIN_USER:-admin} --password $${AIRFLOW_ADMIN_PASSWORD:-admin_local_only} --firstname Local --lastname Admin --role Admin --email admin@example.com || true) && airflow scheduler & airflow webserver"
+    ports: ["8080:8080"]
+    volumes:
+      - ./dags:/app/dags
+      - ./data:/app/data
+      - ./airflow-logs:/opt/airflow/logs
+    depends_on:
+      db: {condition: service_healthy}
+
+volumes:
+  postgres_data:
