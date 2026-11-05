@@ -15,12 +15,36 @@ services:
       timeout: 3s
       retries: 15
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    environment:
+      CLICKHOUSE_DB: taxi
+      CLICKHOUSE_USER: taxi
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-taxi_local_only}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports: ["8123:8123", "9000:9000"]
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--user", "taxi", "--password", "${CLICKHOUSE_PASSWORD:-taxi_local_only}", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   app:
     build: .
     env_file: .env
+    environment:
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_USER: taxi
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-taxi_local_only}
+      CLICKHOUSE_DATABASE: taxi
     volumes: ["./data:/app/data"]
     depends_on:
       db: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
     command: ["python", "-c", "import time; time.sleep(2147483647)"]
 
   airflow:
@@ -43,3 +67,4 @@ services:
 
 volumes:
   postgres_data:
+  clickhouse_data:

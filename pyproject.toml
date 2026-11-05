@@ -7,7 +7,7 @@ name = "taxi-demand-pipeline"
 version = "0.1.0"
 description = "Data quality and feature pipeline for NYC taxi demand"
 requires-python = ">=3.11"
-dependencies = ["psycopg[binary]>=3.2,<4", "requests>=2.32,<3", "pyarrow>=18,<24"]
+dependencies = ["psycopg[binary]>=3.2,<4", "clickhouse-connect>=0.8,<1", "requests>=2.32,<3", "pyarrow>=18,<24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0,<9"]
