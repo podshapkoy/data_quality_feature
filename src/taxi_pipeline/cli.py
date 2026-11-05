@@ -7,6 +7,7 @@ import requests
 from .ingest import ingest_trips, ingest_weather_for_trips
 from .transform import build_features, check_features, validate_and_clean
 from .benchmark import run_query_benchmark
+from .clickhouse import run_clickhouse_benchmark, sync_trips
 
 
 def download_sample(path: str):
@@ -34,12 +35,16 @@ def run_pipeline():
 
 def main():
     parser = argparse.ArgumentParser(description="NYC taxi demand data pipeline")
-    parser.add_argument("command", choices=("run", "download-sample", "benchmark"))
+    parser.add_argument("command", choices=("run", "download-sample", "benchmark", "clickhouse-sync", "clickhouse-benchmark"))
     args = parser.parse_args()
     if args.command == "run":
         run_pipeline()
     elif args.command == "benchmark":
         run_query_benchmark()
+    elif args.command == "clickhouse-sync":
+        print(f"ClickHouse trips copied: {sync_trips():,}")
+    elif args.command == "clickhouse-benchmark":
+        run_clickhouse_benchmark()
     else:
         download_sample(os.getenv("TLC_CSV_PATH", "/app/data/raw/yellow_tripdata_2024-01.parquet"))
 
