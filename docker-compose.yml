@@ -51,6 +51,11 @@ services:
     build: .
     env_file: .env
     environment:
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_USER: taxi
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-taxi_local_only}
+      CLICKHOUSE_DATABASE: taxi
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_FOLDER: /app/dags
@@ -64,6 +69,7 @@ services:
       - ./airflow-logs:/opt/airflow/logs
     depends_on:
       db: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
 
 volumes:
   postgres_data:

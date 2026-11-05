@@ -35,9 +35,14 @@ def run_result_checks(**context):
     check_features(run_id)
 
 
+def sync_clickhouse():
+    from taxi_pipeline.clickhouse import sync_trips
+    return sync_trips()
+
+
 with DAG(
     dag_id="taxi_demand_pipeline",
-    description="Ingest, validate, clean and feature taxi demand data",
+    description="Ingest, validate and prepare taxi demand features in PostgreSQL and ClickHouse",
     start_date=datetime(2024, 1, 1),
     schedule="@daily",
     catchup=False,
@@ -51,4 +56,10 @@ with DAG(
     quality = PythonOperator(task_id="validate_and_clean", python_callable=run_quality)
     features = PythonOperator(task_id="calculate_features", python_callable=run_features)
     checks = PythonOperator(task_id="check_feature_mart", python_callable=run_result_checks)
-    ingest >> weather >> quality >> features >> checks
+    clickhouse_sync = PythonOperator(
+        task_id="sync_clickhouse",
+        python_callable=sync_clickhouse,
+        retries=2,
+        retry_delay=timedelta(minutes=2),
+    )
+    ingest >> weather >> quality >> features >> checks >> clickhouse_sync
